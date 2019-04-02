@@ -1,11 +1,11 @@
 const { ExifImage } = require('exif');
 
-function* exif(buffer) {
+function exif(buffer) {
     return new Promise((resolve, reject) => {
         try {
             const exifImage = new ExifImage();
 
-            exifImage.loadImage(buffer, function(err, data) {
+            exifImage.loadImage(buffer, (err, data) => {
                 if (err) {
                     if (err.code === 'NO_EXIF_SEGMENT') {
                         resolve(null);

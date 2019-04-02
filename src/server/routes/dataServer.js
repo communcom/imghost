@@ -6,7 +6,7 @@ const { asyncWrapper } = require('../utils/koa');
 
 router.get(
     '/images/:filename',
-    asyncWrapper(async function(ctx) {
+    asyncWrapper(async ctx => {
         try {
             if (missing(ctx, ctx.params, 'filename')) {
                 return;

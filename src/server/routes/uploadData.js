@@ -15,7 +15,7 @@ const bodyLimits = koaBody({
 router.post(
     '/upload',
     bodyLimits,
-    asyncWrapper(async function(ctx) {
+    asyncWrapper(async ctx => {
         const { files, fields } = ctx.request.body;
 
         if (!files) {
@@ -48,7 +48,7 @@ router.post(
             }
         } else {
             try {
-                buffer = new Buffer(filebase64, 'base64');
+                buffer = Buffer.from(filebase64, 'base64');
             } catch (err) {
                 console.error('Invalid base64:', err);
                 ctx.status = 400;

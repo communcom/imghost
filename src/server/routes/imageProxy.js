@@ -8,12 +8,66 @@ const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { processAndSave } = require('../utils/uploading');
 const { asyncWrapper } = require('../utils/koa');
 
+function makeResizedFileId(fileId, { width, height }) {
+    return fileId.replace('.', `_${width}x${height}.`);
+}
+
+async function checkResizedCache(ctx, { fileId, width, height }) {
+    try {
+        const resizedFileId = makeResizedFileId(fileId, { width, height });
+        const buffer = await getFromStorage(resizedFileId);
+        ctx.body = buffer;
+        return true;
+    } catch (err) {
+        if (err.code !== 'ENOENT') {
+            console.warn('Resized cache reading failed:', err);
+        }
+    }
+
+    return false;
+}
+
+function notFoundError(ctx) {
+    ctx.status = 404;
+    ctx.statusText = 'Not found';
+    ctx.body = { error: ctx.statusText };
+}
+
+function internalError(ctx) {
+    ctx.status = 500;
+    ctx.statusText = 'Something went wrong';
+    ctx.body = { error: ctx.statusText };
+}
+
+async function process(ctx, { fileId, width, height, buffer }) {
+    try {
+        const resizedCache = await sharp(buffer)
+            .resize(width, height, { fit: 'cover', withoutEnlargement: true })
+            .toBuffer();
+
+        ctx.body = resizedCache;
+
+        setTimeout(async () => {
+            try {
+                const resizedFileId = makeResizedFileId(fileId, { width, height });
+
+                await saveToStorage(resizedFileId, resizedCache);
+            } catch (err) {
+                console.warn('Cache saving failed:', err);
+            }
+        }, 0);
+    } catch (err) {
+        console.error('Something went wrong:', err);
+        internalError(ctx);
+    }
+}
+
 router.get(
     '/images/:width(\\d+)x:height(\\d+)/:fileId',
-    asyncWrapper(async function(ctx) {
+    asyncWrapper(async ctx => {
         const width = Number(ctx.params.width);
         const height = Number(ctx.params.height);
-        const fileId = ctx.params.fileId;
+        const { fileId } = ctx.params;
         let buffer;
 
         if (await checkResizedCache(ctx, { fileId, width, height })) {
@@ -44,7 +98,7 @@ router.get(
 
 router.get(
     '/proxy/:width(\\d+)x:height(\\d+)/:url(.*)',
-    asyncWrapper(async function(ctx) {
+    asyncWrapper(async ctx => {
         const width = Number(ctx.params.width);
         const height = Number(ctx.params.height);
 
@@ -121,7 +175,9 @@ router.get(
                             url,
                             fileId: data.fileId,
                         }).save();
-                    } catch (err) {}
+                    } catch (err) {
+                        // Ignore error
+                    }
                 } catch (err) {
                     console.warn('Request failed:', err);
                 }
@@ -136,59 +192,5 @@ router.get(
         await process(ctx, { fileId, width, height, buffer });
     })
 );
-
-async function checkResizedCache(ctx, { fileId, width, height }) {
-    try {
-        const resizedFileId = makeResizedFileId(fileId, { width, height });
-        const buffer = await getFromStorage(resizedFileId);
-        ctx.body = buffer;
-        return true;
-    } catch (err) {
-        if (err.code !== 'ENOENT') {
-            console.warn('Resized cache reading failed:', err);
-        }
-    }
-
-    return false;
-}
-
-async function process(ctx, { fileId, width, height, buffer }) {
-    try {
-        const resizedCache = await sharp(buffer)
-            .resize(width, height, { fit: 'cover', withoutEnlargement: true })
-            .toBuffer();
-
-        ctx.body = resizedCache;
-
-        setTimeout(async () => {
-            try {
-                const resizedFileId = makeResizedFileId(fileId, { width, height });
-
-                await saveToStorage(resizedFileId, resizedCache);
-            } catch (err) {
-                console.warn('Cache saving failed:', err);
-            }
-        }, 0);
-    } catch (err) {
-        console.error('Something went wrong:', err);
-        internalError(ctx);
-    }
-}
-
-function notFoundError(ctx) {
-    ctx.status = 404;
-    ctx.statusText = 'Not found';
-    ctx.body = { error: ctx.statusText };
-}
-
-function internalError(ctx) {
-    ctx.status = 500;
-    ctx.statusText = 'Something went wrong';
-    ctx.body = { error: ctx.statusText };
-}
-
-function makeResizedFileId(fileId, { width, height }) {
-    return fileId.replace('.', `_${width}x${height}.`);
-}
 
 module.exports = router.routes();

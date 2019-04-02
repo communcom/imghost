@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
-const path = require('path');
 
 const { filesPath } = require('../../config');
+const { formatFullPath } = require('../utils/path');
 
 async function saveTo(dir, filename, buffer) {
     const { subDir, subInnerDir, fullPath } = formatFullPath(dir, filename);
@@ -19,7 +19,8 @@ async function saveTo(dir, filename, buffer) {
         return;
     }
 
-    const tmpFileName = fullPath + '.tmp';
+    const randomNumber = Math.floor(Math.random() * 1000000);
+    const tmpFileName = `${fullPath}.tmp${randomNumber}`;
 
     await fs.writeFile(tmpFileName, buffer);
     await fs.rename(tmpFileName, fullPath);
@@ -29,19 +30,6 @@ async function getFrom(dir, filename) {
     const { fullPath } = formatFullPath(dir, filename);
 
     return fs.readFile(fullPath);
-}
-
-function formatFullPath(dir, filename) {
-    const subDir = path.join(dir, filename.substr(0, 2));
-    const subInnerDir = path.join(subDir, filename.substr(0, 4));
-
-    const fullPath = path.join(subInnerDir, filename);
-
-    return {
-        subDir,
-        subInnerDir,
-        fullPath,
-    };
 }
 
 function saveToStorage(fileId, buffer) {

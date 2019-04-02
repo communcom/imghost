@@ -7,7 +7,7 @@ function makeModel(name, schemaConfig, optionsConfig = {}) {
     );
 
     if (optionsConfig.index) {
-        for (let indexConfig of optionsConfig.index) {
+        for (const indexConfig of optionsConfig.index) {
             schema.index(indexConfig.fields, indexConfig.options);
         }
     }

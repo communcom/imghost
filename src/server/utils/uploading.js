@@ -3,9 +3,10 @@ const fileType = require('file-type');
 const base58 = require('bs58');
 const sharp = require('sharp');
 
-const config = require('../../config');
 const { exif, hasLocation, hasOrientation } = require('../utils/exifUtils');
 const { saveToStorage } = require('../utils/discStorage');
+
+class UnsupportedType extends Error {}
 
 async function processAndSave(buffer) {
     const fType = fileType(buffer);
@@ -61,6 +62,7 @@ async function processAndSave(buffer) {
                     image.rotate();
                 }
 
+                // eslint-disable-next-line no-param-reassign
                 buffer = await image.toBuffer();
             }
         } catch (err) {
@@ -75,8 +77,6 @@ async function processAndSave(buffer) {
         fileId: fileName,
     };
 }
-
-class UnsupportedType extends Error {}
 
 module.exports = {
     processAndSave,

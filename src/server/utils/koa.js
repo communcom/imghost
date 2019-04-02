@@ -1,5 +1,5 @@
 function asyncWrapper(func) {
-    return function*() {
+    return function* wrapper() {
         yield func(this);
     };
 }

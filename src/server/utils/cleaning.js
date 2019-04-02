@@ -9,6 +9,10 @@ const RUN_EVERY = 10 * 60 * 1000;
 
 const CACHE_INTERVAL = 2 * 24 * 60 * 60 * 1000;
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function startIntervalCleaning() {
     setTimeout(async () => {
         try {
@@ -45,7 +49,7 @@ function startIntervalCleaning() {
                 } catch (err) {
                     console.error('Cant remove file:', doc.fileId);
                 }
-                counter++;
+                counter += 1;
 
                 if (counter % 50 === 0) {
                     await sleep(30 * 1000);
@@ -66,10 +70,6 @@ function startIntervalCleaning() {
 
         startIntervalCleaning();
     }, RUN_EVERY);
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = {

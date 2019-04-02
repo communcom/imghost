@@ -1,0 +1,6 @@
+{
+  "*.js": [
+    "eslint --ignore-pattern '!.*.js' src/ --fix",
+    "git add"
+  ]
+}
