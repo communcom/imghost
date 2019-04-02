@@ -1,12 +1,12 @@
 const router = require('koa-router')();
 
-router.get('/', () => {
+router.get('/', function*() {
     this.status = 200;
     this.statusText = 'OK';
     this.body = { status: 200, statusText: 'OK' };
 });
 
-router.get('/healthcheck', () => {
+router.get('/healthcheck', function*() {
     this.status = 200;
     this.statusText = 'OK';
     this.body = { status: 200, statusText: 'OK' };

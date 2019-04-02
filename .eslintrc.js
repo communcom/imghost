@@ -19,5 +19,7 @@ module.exports = {
         'no-await-in-loop': 0,
         'no-cond-assign': 0,
         'prefer-destructuring': 0,
+        'require-yield': 0,
+        'func-names': 0,
     },
 };
