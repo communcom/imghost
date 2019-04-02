@@ -38,14 +38,14 @@ router.post(
 
         const { fileId } = await processAndSave(buffer);
 
-        const { protocol, host, port } = config;
+        const { protocol, domainName, port } = config;
         const filePath = `images/${fileId}`;
         let url;
 
         if (protocol === 'https') {
-            url = `https://${host}/${filePath}`;
+            url = `https://${domainName}/${filePath}`;
         } else {
-            url = `${protocol}://${host}:${port}/${filePath}`;
+            url = `${protocol}://${domainName}:${port}/${filePath}`;
         }
 
         res.json({

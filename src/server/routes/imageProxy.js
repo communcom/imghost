@@ -3,6 +3,7 @@ const sharp = require('sharp');
 const urlParser = require('url');
 const request = require('request-promise-native');
 
+const { domainName } = require('../../config');
 const { ExternalImage } = require('../db');
 const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { processAndSave } = require('../utils/uploading');
@@ -98,7 +99,7 @@ router.get(
         let buffer;
         let fileId;
 
-        if (urlInfo.protocol === 'https:' && urlInfo.host === 'images.golos.io') {
+        if (urlInfo.protocol === 'https:' && urlInfo.host === domainName) {
             const match = urlInfo.path.match(/^\/images\/([A-Za-z0-9]+\.(?:jpg|gif|png))$/);
 
             if (match) {
