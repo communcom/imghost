@@ -15,7 +15,6 @@ async function saveTo(dir, filename, buffer) {
     }
 
     if (await fs.exists(fullPath)) {
-        console.log('Duplicate registered');
         return;
     }
 

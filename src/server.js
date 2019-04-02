@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 
 const { connect } = require('./db');
 const config = require('./config');
@@ -14,6 +15,10 @@ const imageProxy = require('./routes/imageProxy');
 connect();
 
 const app = express();
+
+if (process.env.CORS_DISABLED) {
+    app.use(cors());
+}
 
 app.use(healthCheck);
 app.use(dataServer);
