@@ -1,0 +1,30 @@
+version: '3.6'
+services:
+  imagehoster:
+    image: imagehoster
+    restart: always
+    depends_on:
+      - mongo
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - 3000:80
+    volumes:
+      - files_vol:/data/files
+    deploy:
+      replicas: 4
+
+  mongo:
+    image: mongo:4
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_vol:/data/db
+
+volumes:
+  files_vol:
+  mongodb_vol:
