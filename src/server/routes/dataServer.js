@@ -1,41 +1,25 @@
-const router = require('koa-router')();
+const express = require('express');
 
 const { getFromStorage } = require('../utils/discStorage');
-const { missing } = require('../utils/validation');
-const { asyncWrapper } = require('../utils/koa');
+const { apiWrapper, ResponseError } = require('../utils/express');
+
+const router = express.Router();
 
 router.get(
     '/images/:filename',
-    asyncWrapper(async ctx => {
+    apiWrapper(async (req, res) => {
+        const { filename } = req.params;
+
         try {
-            if (missing(ctx, ctx.params, 'filename')) {
-                return;
-            }
-
-            const { filename } = ctx.params;
-
-            try {
-                ctx.body = await getFromStorage(filename);
-            } catch (err) {
-                if (err.code === 'ENOENT') {
-                    ctx.status = 404;
-                    ctx.statusText = 'File not found';
-                    ctx.body = { error: ctx.statusText };
-                    return;
-                }
-
-                console.error('Open file failed:', err);
-                ctx.status = 500;
-                ctx.statusText = `Error fetching ${filename}`;
-                ctx.body = { error: ctx.statusText };
-            }
+            res.send(await getFromStorage(filename));
         } catch (err) {
-            console.error(err);
-            ctx.status = 500;
-            ctx.statusText = 'Internal server error';
-            ctx.body = { error: ctx.statusText };
+            if (err.code === 'ENOENT') {
+                throw new ResponseError(404, 'File not found');
+            }
+
+            throw new ResponseError(500, `Error fetching ${filename}`);
         }
     })
 );
 
-module.exports = router.routes();
+module.exports = router;

@@ -1,90 +1,57 @@
-const router = require('koa-router')();
-const koaBody = require('koa-body');
-const fs = require('fs-extra');
+const express = require('express');
+const multer = require('multer');
 
 const config = require('../../config');
-const { processAndSave, UnsupportedType } = require('../utils/uploading');
-const { missing } = require('../utils/validation');
-const { asyncWrapper } = require('../utils/koa');
+const { processAndSave } = require('../utils/uploading');
+const { apiWrapper, ResponseError } = require('../utils/express');
 
-const bodyLimits = koaBody({
-    multipart: true,
-    formLimit: 20 * 1000 * 1024,
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
+
+const router = express.Router();
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fieldSize: '10MB',
+        fileSize: '10MB',
+    },
+    fileFilter(req, file, cb) {
+        if (file.fieldname !== 'file') {
+            cb(null, false);
+            return;
+        }
+
+        if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+            cb(null, true);
+            return;
+        }
+
+        throw new ResponseError(400, 'Invalid type');
+    },
 });
 
 router.post(
     '/upload',
-    bodyLimits,
-    asyncWrapper(async ctx => {
-        const { files, fields } = ctx.request.body;
+    upload.single('file'),
+    apiWrapper(async (req, res) => {
+        const buffer = req.file.buffer;
 
-        if (!files) {
-            missing(ctx, {}, 'file');
-            return;
-        }
+        const { fileId } = await processAndSave(buffer);
 
-        const fileNames = Object.keys(files);
-        const { filename, filebase64 } = fields;
+        const { protocol, host, port } = config;
+        const filePath = `images/${fileId}`;
+        let url;
 
-        if (!fileNames.length && !(filename && filebase64)) {
-            missing(ctx, {}, 'file');
-            return;
-        }
-
-        let buffer;
-
-        if (fileNames.length) {
-            const file = files[fileNames[0]];
-
-            try {
-                buffer = await fs.readFile(file.path);
-                await fs.unlink(file.path);
-            } catch (err) {
-                console.error('Reading file failed:', err);
-                ctx.status = 400;
-                ctx.statusText = 'Upload failed';
-                ctx.body = { error: ctx.statusText };
-                return;
-            }
+        if (protocol === 'https') {
+            url = `https://${host}/${filePath}`;
         } else {
-            try {
-                buffer = Buffer.from(filebase64, 'base64');
-            } catch (err) {
-                console.error('Invalid base64:', err);
-                ctx.status = 400;
-                ctx.statusText = 'Invalid base64 encoding';
-                ctx.body = { error: ctx.statusText };
-                return;
-            }
+            url = `${protocol}://${host}:${port}/${filePath}`;
         }
 
-        try {
-            const { fileId } = await processAndSave(buffer);
-
-            const { protocol, host, port } = config;
-            const filePath = `images/${fileId}`;
-            let url;
-
-            if (protocol === 'https') {
-                url = `https://${host}/${filePath}`;
-            } else {
-                url = `${protocol}://${host}:${port}/${filePath}`;
-            }
-
-            ctx.body = { url };
-        } catch (err) {
-            if (err instanceof UnsupportedType) {
-                ctx.status = 400;
-                ctx.statusText = 'Please upload only images.';
-                ctx.body = { error: ctx.statusText };
-            } else {
-                console.warn('Processing failed:', err);
-                ctx.status = 500;
-                ctx.statusText = 'Internal server error';
-                ctx.body = { error: ctx.statusText };
-            }
-        }
+        res.json({
+            url,
+        });
     })
 );
 
-module.exports = router.routes();
+module.exports = router;

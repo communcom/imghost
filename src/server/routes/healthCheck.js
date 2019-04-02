@@ -1,15 +1,13 @@
-const router = require('koa-router')();
+const express = require('express');
 
-router.get('/', function*() {
-    this.status = 200;
-    this.statusText = 'OK';
-    this.body = { status: 200, statusText: 'OK' };
+const router = express.Router();
+
+router.get('/', (req, res) => {
+    res.json({ status: 200, statusText: 'OK' });
 });
 
-router.get('/healthcheck', function*() {
-    this.status = 200;
-    this.statusText = 'OK';
-    this.body = { status: 200, statusText: 'OK' };
+router.get('/healthcheck', (req, res) => {
+    res.json({ status: 200, statusText: 'OK' });
 });
 
-module.exports = router.routes();
+module.exports = router;

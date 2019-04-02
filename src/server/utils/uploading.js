@@ -4,9 +4,8 @@ const base58 = require('bs58');
 const sharp = require('sharp');
 
 const { exif, hasLocation, hasOrientation } = require('../utils/exifUtils');
+const { ResponseError } = require('../utils/express');
 const { saveToStorage } = require('../utils/discStorage');
-
-class UnsupportedType extends Error {}
 
 async function processAndSave(buffer) {
     const fType = fileType(buffer);
@@ -29,8 +28,7 @@ async function processAndSave(buffer) {
     }
 
     if (!extension) {
-        console.warn('Upload rejected, fileType:', fType);
-        throw new UnsupportedType();
+        throw new ResponseError(404, 'Supported only formats: jpg, png, gif');
     }
 
     const shaSum = crypto.createHash('sha1');
@@ -80,5 +78,4 @@ async function processAndSave(buffer) {
 
 module.exports = {
     processAndSave,
-    UnsupportedType,
 };

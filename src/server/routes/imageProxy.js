@@ -1,4 +1,4 @@
-const router = require('koa-router')();
+const express = require('express');
 const sharp = require('sharp');
 const urlParser = require('url');
 const request = require('request-promise-native');
@@ -6,71 +6,58 @@ const request = require('request-promise-native');
 const { ExternalImage } = require('../db');
 const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { processAndSave } = require('../utils/uploading');
-const { asyncWrapper } = require('../utils/koa');
+const { apiWrapper, ResponseError } = require('../utils/express');
+
+const DOWNLOAD_FILE_LIMIT = 10 * 1024 * 1024;
+
+const router = express.Router();
 
 function makeResizedFileId(fileId, { width, height }) {
     return fileId.replace('.', `_${width}x${height}.`);
 }
 
-async function checkResizedCache(ctx, { fileId, width, height }) {
+async function checkResizedCache({ fileId, width, height }) {
     try {
         const resizedFileId = makeResizedFileId(fileId, { width, height });
-        const buffer = await getFromStorage(resizedFileId);
-        ctx.body = buffer;
-        return true;
+        return await getFromStorage(resizedFileId);
     } catch (err) {
         if (err.code !== 'ENOENT') {
             console.warn('Resized cache reading failed:', err);
         }
     }
 
-    return false;
+    return null;
 }
 
-function notFoundError(ctx) {
-    ctx.status = 404;
-    ctx.statusText = 'Not found';
-    ctx.body = { error: ctx.statusText };
-}
+async function process({ fileId, width, height, buffer }) {
+    const resizedCache = await sharp(buffer)
+        .resize(width, height, { fit: 'cover', withoutEnlargement: true })
+        .toBuffer();
 
-function internalError(ctx) {
-    ctx.status = 500;
-    ctx.statusText = 'Something went wrong';
-    ctx.body = { error: ctx.statusText };
-}
+    setTimeout(async () => {
+        try {
+            const resizedFileId = makeResizedFileId(fileId, { width, height });
 
-async function process(ctx, { fileId, width, height, buffer }) {
-    try {
-        const resizedCache = await sharp(buffer)
-            .resize(width, height, { fit: 'cover', withoutEnlargement: true })
-            .toBuffer();
+            await saveToStorage(resizedFileId, resizedCache);
+        } catch (err) {
+            console.warn('Cache saving failed:', err);
+        }
+    }, 0);
 
-        ctx.body = resizedCache;
-
-        setTimeout(async () => {
-            try {
-                const resizedFileId = makeResizedFileId(fileId, { width, height });
-
-                await saveToStorage(resizedFileId, resizedCache);
-            } catch (err) {
-                console.warn('Cache saving failed:', err);
-            }
-        }, 0);
-    } catch (err) {
-        console.error('Something went wrong:', err);
-        internalError(ctx);
-    }
+    return resizedCache;
 }
 
 router.get(
     '/images/:width(\\d+)x:height(\\d+)/:fileId',
-    asyncWrapper(async ctx => {
-        const width = Number(ctx.params.width);
-        const height = Number(ctx.params.height);
-        const { fileId } = ctx.params;
-        let buffer;
+    apiWrapper(async (req, res) => {
+        const width = Number(req.params.width);
+        const height = Number(req.params.height);
+        const { fileId } = req.params;
 
-        if (await checkResizedCache(ctx, { fileId, width, height })) {
+        let buffer = await checkResizedCache({ fileId, width, height });
+
+        if (buffer) {
+            res.send(buffer);
             return;
         }
 
@@ -78,41 +65,34 @@ router.get(
             buffer = await getFromStorage(fileId);
         } catch (err) {
             if (err.code === 'ENOENT') {
-                notFoundError(ctx);
-                return;
+                throw new ResponseError(404, 'Not found');
             }
-
-            console.error('File loading failed:', err);
-            internalError(ctx);
-            return;
+            throw err;
         }
 
-        await process(ctx, {
+        buffer = await process({
             fileId,
             width,
             height,
             buffer,
         });
+
+        res.send(buffer);
     })
 );
 
 router.get(
-    '/proxy/:width(\\d+)x:height(\\d+)/:url(.*)',
-    asyncWrapper(async ctx => {
-        const width = Number(ctx.params.width);
-        const height = Number(ctx.params.height);
+    '/proxy/:width(\\d+)x:height(\\d+)/*',
+    apiWrapper(async (req, res) => {
+        const width = Number(req.params.width);
+        const height = Number(req.params.height);
 
-        const url = decodeURIComponent(
-            ctx.request.originalUrl.match(/^\/proxy\/\d+x\d+\/(.+)$/)[1]
-        );
+        const url = decodeURIComponent(req.originalUrl.match(/^\/proxy\/\d+x\d+\/(.+)$/)[1]);
 
         const urlInfo = urlParser.parse(url);
 
         if (!urlInfo.hostname) {
-            ctx.status = 400;
-            ctx.statusText = 'Invalid url';
-            ctx.body = { error: ctx.statusText };
-            return;
+            throw new ResponseError(400, 'Invalid URL');
         }
 
         let buffer;
@@ -124,7 +104,10 @@ router.get(
             if (match) {
                 fileId = match[1];
 
-                if (await checkResizedCache(ctx, { fileId, width, height })) {
+                buffer = await checkResizedCache({ fileId, width, height });
+
+                if (buffer) {
+                    res.send(buffer);
                     return;
                 }
 
@@ -143,7 +126,10 @@ router.get(
             if (externalImage) {
                 fileId = externalImage.fileId;
 
-                if (await checkResizedCache(ctx, { fileId, width, height })) {
+                buffer = await checkResizedCache({ fileId, width, height });
+
+                if (buffer) {
+                    res.send(buffer);
                     return;
                 }
 
@@ -160,11 +146,16 @@ router.get(
                         url,
                         gzip: true,
                         encoding: null,
+                        timeout: 20000,
                         headers: {
                             'user-agent':
                                 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
                         },
                     });
+
+                    if (buffer.length > DOWNLOAD_FILE_LIMIT) {
+                        throw new ResponseError(400, 'Too big file');
+                    }
 
                     try {
                         const data = await processAndSave(buffer);
@@ -185,12 +176,13 @@ router.get(
         }
 
         if (!buffer) {
-            notFoundError(ctx);
-            return;
+            throw new ResponseError(404, 'Not found');
         }
 
-        await process(ctx, { fileId, width, height, buffer });
+        buffer = await process({ fileId, width, height, buffer });
+
+        res.send(buffer);
     })
 );
 
-module.exports = router.routes();
+module.exports = router;

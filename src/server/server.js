@@ -1,5 +1,4 @@
-const Koa = require('koa');
-const cors = require('koa-cors');
+const express = require('express');
 
 const { connect } = require('./db');
 const config = require('../config');
@@ -14,9 +13,8 @@ const imageProxy = require('./routes/imageProxy');
 
 connect();
 
-const app = new Koa();
+const app = express();
 
-app.use(cors());
 app.use(healthCheck);
 app.use(dataServer);
 app.use(uploadData);
