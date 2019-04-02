@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 
-const { filesPath } = require('../../config');
-const { formatFullPath } = require('../utils/path');
+const { filesPath } = require('../config');
+const { formatFullPath } = require('./path');
 
 async function saveTo(dir, filename, buffer) {
     const { subDir, subInnerDir, fullPath } = formatFullPath(dir, filename);

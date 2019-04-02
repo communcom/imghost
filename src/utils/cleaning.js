@@ -3,7 +3,7 @@
  */
 
 const { ResizedCache } = require('../db');
-const { removeFromCache } = require('../utils/discStorage');
+const { removeFromCache } = require('./discStorage');
 
 const RUN_EVERY = 10 * 60 * 1000;
 

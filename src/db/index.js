@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const { mongoDbConnect } = require('../../config');
+const { mongoDbConnect } = require('../config');
 const ExternalImage = require('./ExternalImage');
 
 function connect() {

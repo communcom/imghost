@@ -3,9 +3,9 @@ const fileType = require('file-type');
 const base58 = require('bs58');
 const sharp = require('sharp');
 
-const { exif, hasLocation, hasOrientation } = require('../utils/exifUtils');
-const { ResponseError } = require('../utils/express');
-const { saveToStorage } = require('../utils/discStorage');
+const { exif, hasLocation, hasOrientation } = require('./exifUtils');
+const { ResponseError } = require('./express');
+const { saveToStorage } = require('./discStorage');
 
 async function processAndSave(buffer) {
     const fType = fileType(buffer);

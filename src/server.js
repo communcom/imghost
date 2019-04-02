@@ -1,7 +1,7 @@
 const express = require('express');
 
 const { connect } = require('./db');
-const config = require('../config');
+const config = require('./config');
 // const { startIntervalCleaning } = require('./utils/cleaning');
 
 console.log('\n> Applications starting with config:\n============\n', config, '\n============');

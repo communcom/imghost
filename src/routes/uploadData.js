@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 
-const config = require('../../config');
+const config = require('../config');
 const { processAndSave } = require('../utils/uploading');
 const { apiWrapper, ResponseError } = require('../utils/express');
 

@@ -2,10 +2,10 @@
   "name": "simpleimagehoster",
   "version": "0.1.0",
   "description": "",
-  "main": "src/server/index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node src/server/index.js",
-    "dev": "nodemon -w src node src/server/index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon -w src node src/index.js",
     "test": "eslint src",
     "fix": "eslint --fix src"
   },

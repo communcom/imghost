@@ -3,7 +3,7 @@ const sharp = require('sharp');
 const urlParser = require('url');
 const request = require('request-promise-native');
 
-const { domainName } = require('../../config');
+const { domainName } = require('../config');
 const { ExternalImage } = require('../db');
 const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { processAndSave } = require('../utils/uploading');
