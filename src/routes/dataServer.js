@@ -1,7 +1,7 @@
 const express = require('express');
 
 const { getFromStorage } = require('../utils/discStorage');
-const { apiWrapper, ResponseError } = require('../utils/express');
+const { apiWrapper, sendFile, ResponseError } = require('../utils/express');
 
 const router = express.Router();
 
@@ -11,13 +11,13 @@ router.get(
         const { filename } = req.params;
 
         try {
-            res.send(await getFromStorage(filename));
+            sendFile(res, filename, await getFromStorage(filename));
         } catch (err) {
             if (err.code === 'ENOENT') {
                 throw new ResponseError(404, 'File not found');
             }
 
-            throw new ResponseError(500, `Error fetching ${filename}`);
+            throw err;
         }
     })
 );

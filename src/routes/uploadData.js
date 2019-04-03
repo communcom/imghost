@@ -2,10 +2,9 @@ const express = require('express');
 const multer = require('multer');
 
 const config = require('../config');
+const { ALLOWED_MIME_TYPES } = require('../utils/mime');
 const { processAndSave } = require('../utils/uploading');
 const { apiWrapper, ResponseError } = require('../utils/express');
-
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
 
 const router = express.Router();
 

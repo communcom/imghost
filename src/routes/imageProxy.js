@@ -7,7 +7,7 @@ const { domainName } = require('../config');
 const { ExternalImage } = require('../db');
 const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { processAndSave } = require('../utils/uploading');
-const { apiWrapper, ResponseError } = require('../utils/express');
+const { apiWrapper, sendFile, ResponseError } = require('../utils/express');
 
 const DOWNLOAD_FILE_LIMIT = 10 * 1024 * 1024;
 
@@ -58,7 +58,7 @@ router.get(
         let buffer = await checkResizedCache({ fileId, width, height });
 
         if (buffer) {
-            res.send(buffer);
+            sendFile(res, fileId, buffer);
             return;
         }
 
@@ -78,7 +78,7 @@ router.get(
             buffer,
         });
 
-        res.send(buffer);
+        sendFile(res, fileId, buffer);
     })
 );
 
@@ -108,7 +108,7 @@ router.get(
                 buffer = await checkResizedCache({ fileId, width, height });
 
                 if (buffer) {
-                    res.send(buffer);
+                    sendFile(res, fileId, buffer);
                     return;
                 }
 
@@ -130,7 +130,7 @@ router.get(
                 buffer = await checkResizedCache({ fileId, width, height });
 
                 if (buffer) {
-                    res.send(buffer);
+                    sendFile(res, fileId, buffer);
                     return;
                 }
 
@@ -180,9 +180,7 @@ router.get(
             throw new ResponseError(404, 'Not found');
         }
 
-        buffer = await process({ fileId, width, height, buffer });
-
-        res.send(buffer);
+        sendFile(res, fileId, await process({ fileId, width, height, buffer }));
     })
 );
 
