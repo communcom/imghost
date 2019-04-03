@@ -10,7 +10,7 @@
   "printWidth": 100,
   "overrides": [
     {
-      "files": ["*.json", "*.yml", "*.yaml", ".prettierrc"],
+      "files": ["*.json", "*.yml", "*.yaml", ".prettierrc", ".eslintrc.js"],
       "options": {
         "tabWidth": 2
       }
