@@ -3,7 +3,6 @@ const cors = require('cors');
 
 const { connect } = require('./db');
 const config = require('./config');
-// const { startIntervalCleaning } = require('./utils/cleaning');
 
 console.log('\n> Applications starting with config:\n============\n', config, '\n============');
 
@@ -16,9 +15,21 @@ connect();
 
 const app = express();
 
-if (process.env.CORS_DISABLED) {
-    app.use(cors());
-}
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            if (
+                !origin ||
+                /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+                config.allowedOrigins.includes(origin)
+            ) {
+                callback(null, true);
+            } else {
+                callback(null, false);
+            }
+        },
+    })
+);
 
 app.use(healthCheck);
 app.use(dataServer);
