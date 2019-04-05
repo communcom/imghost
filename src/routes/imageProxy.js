@@ -81,78 +81,6 @@ router.get(
 );
 
 router.get(
-    '/proxy/*',
-    apiWrapper(async (req, res) => {
-        const url = decodeURIComponent(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
-
-        const urlInfo = urlParser.parse(url);
-
-        if (!urlInfo.hostname) {
-            throw new ResponseError(400, 'Invalid URL');
-        }
-
-        if (urlInfo.protocol === 'https:' && urlInfo.host === domainName) {
-            const match = urlInfo.path.match(/^\/images\/([A-Za-z0-9]+\.(?:jpg|gif|png))$/);
-
-            if (match) {
-                const fileId = match[1];
-
-                const buffer = await getFromStorage(fileId);
-
-                if (buffer) {
-                    sendFile(res, fileId, buffer);
-                    return;
-                }
-            }
-        }
-
-        const externalImage = await ExternalImage.findOne(
-            {
-                url,
-            },
-            'fileId'
-        );
-
-        if (externalImage) {
-            const fileId = externalImage.fileId;
-
-            let buffer;
-
-            try {
-                buffer = await getFromStorage(fileId);
-            } catch (err) {
-                // Ignore error
-                console.error('File not found in storage:', err);
-            }
-
-            if (buffer) {
-                sendFile(res, fileId, buffer);
-                return;
-            }
-        }
-
-        const downloadedImage = await downloadImage(url);
-
-        const { fileId, buffer } = await processAndSave(downloadedImage);
-
-        try {
-            await ExternalImage.updateOne(
-                { url },
-                {
-                    url,
-                    fileId,
-                },
-                { upsert: true }
-            );
-        } catch (err) {
-            console.error(err);
-        }
-
-        sendFile(res, fileId, buffer);
-    })
-);
-
-router.get(
     '/proxy/:width(\\d+)x:height(\\d+)/*',
     apiWrapper(async (req, res) => {
         const width = Number(req.params.width);
@@ -242,6 +170,78 @@ router.get(
         }
 
         sendFile(res, fileId, await process({ fileId, width, height, buffer }));
+    })
+);
+
+router.get(
+    '/proxy/*',
+    apiWrapper(async (req, res) => {
+        const url = decodeURIComponent(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
+
+        const urlInfo = urlParser.parse(url);
+
+        if (!urlInfo.hostname) {
+            throw new ResponseError(400, 'Invalid URL');
+        }
+
+        if (urlInfo.protocol === 'https:' && urlInfo.host === domainName) {
+            const match = urlInfo.path.match(/^\/images\/([A-Za-z0-9]+\.(?:jpg|gif|png))$/);
+
+            if (match) {
+                const fileId = match[1];
+
+                const buffer = await getFromStorage(fileId);
+
+                if (buffer) {
+                    sendFile(res, fileId, buffer);
+                    return;
+                }
+            }
+        }
+
+        const externalImage = await ExternalImage.findOne(
+            {
+                url,
+            },
+            'fileId'
+        );
+
+        if (externalImage) {
+            const fileId = externalImage.fileId;
+
+            let buffer;
+
+            try {
+                buffer = await getFromStorage(fileId);
+            } catch (err) {
+                // Ignore error
+                console.error('File not found in storage:', err);
+            }
+
+            if (buffer) {
+                sendFile(res, fileId, buffer);
+                return;
+            }
+        }
+
+        const downloadedImage = await downloadImage(url);
+
+        const { fileId, buffer } = await processAndSave(downloadedImage);
+
+        try {
+            await ExternalImage.updateOne(
+                { url },
+                {
+                    url,
+                    fileId,
+                },
+                { upsert: true }
+            );
+        } catch (err) {
+            console.error(err);
+        }
+
+        sendFile(res, fileId, buffer);
     })
 );
 
