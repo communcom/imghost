@@ -136,14 +136,16 @@ router.get(
         const { fileId, buffer } = await processAndSave(downloadedImage);
 
         try {
-            await new ExternalImage({
-                url,
-                fileId,
-            }).save();
+            await ExternalImage.updateOne(
+                { url },
+                {
+                    url,
+                    fileId,
+                },
+                { upsert: true }
+            );
         } catch (err) {
-            if (err.code !== 11000) {
-                console.error('ExternalImage saving failed:', err);
-            }
+            console.error(err);
         }
 
         sendFile(res, fileId, buffer);
@@ -218,10 +220,14 @@ router.get(
                         fileId = data.fileId;
                         buffer = data.buffer;
 
-                        await new ExternalImage({
-                            url,
-                            fileId,
-                        }).save();
+                        await ExternalImage.updateOne(
+                            { url },
+                            {
+                                url,
+                                fileId,
+                            },
+                            { upsert: true }
+                        );
                     } catch (err) {
                         // Ignore error
                     }
