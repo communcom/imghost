@@ -1,15 +1,13 @@
 const express = require('express');
 const sharp = require('sharp');
 const urlParser = require('url');
-const request = require('request-promise-native');
 
 const { domainName } = require('../config');
 const { ExternalImage } = require('../db');
 const { getFromStorage, saveToStorage } = require('../utils/discStorage');
+const { downloadImage } = require('../utils/download');
 const { processAndSave } = require('../utils/uploading');
 const { apiWrapper, sendFile, ResponseError } = require('../utils/express');
-
-const DOWNLOAD_FILE_LIMIT = 10 * 1024 * 1024;
 
 const router = express.Router();
 
@@ -83,6 +81,76 @@ router.get(
 );
 
 router.get(
+    '/proxy/*',
+    apiWrapper(async (req, res) => {
+        const url = decodeURIComponent(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
+
+        const urlInfo = urlParser.parse(url);
+
+        if (!urlInfo.hostname) {
+            throw new ResponseError(400, 'Invalid URL');
+        }
+
+        if (urlInfo.protocol === 'https:' && urlInfo.host === domainName) {
+            const match = urlInfo.path.match(/^\/images\/([A-Za-z0-9]+\.(?:jpg|gif|png))$/);
+
+            if (match) {
+                const fileId = match[1];
+
+                const buffer = await getFromStorage(fileId);
+
+                if (buffer) {
+                    sendFile(res, fileId, buffer);
+                    return;
+                }
+            }
+        }
+
+        const externalImage = await ExternalImage.findOne(
+            {
+                url,
+            },
+            'fileId'
+        );
+
+        if (externalImage) {
+            const fileId = externalImage.fileId;
+
+            let buffer;
+
+            try {
+                buffer = await getFromStorage(fileId);
+            } catch (err) {
+                // Ignore error
+                console.error('File not found in storage:', err);
+            }
+
+            if (buffer) {
+                sendFile(res, fileId, buffer);
+                return;
+            }
+        }
+
+        const downloadedImage = await downloadImage(url);
+
+        const { fileId, buffer } = await processAndSave(downloadedImage);
+
+        try {
+            await new ExternalImage({
+                url,
+                fileId,
+            }).save();
+        } catch (err) {
+            if (err.code !== 11000) {
+                console.error('ExternalImage saving failed:', err);
+            }
+        }
+
+        sendFile(res, fileId, buffer);
+    })
+);
+
+router.get(
     '/proxy/:width(\\d+)x:height(\\d+)/*',
     apiWrapper(async (req, res) => {
         const width = Number(req.params.width);
@@ -143,20 +211,7 @@ router.get(
 
             if (!buffer) {
                 try {
-                    buffer = await request({
-                        url,
-                        gzip: true,
-                        encoding: null,
-                        timeout: 20000,
-                        headers: {
-                            'user-agent':
-                                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-                        },
-                    });
-
-                    if (buffer.length > DOWNLOAD_FILE_LIMIT) {
-                        throw new ResponseError(400, 'Too big file');
-                    }
+                    buffer = await downloadImage(url);
 
                     try {
                         const data = await processAndSave(buffer);
@@ -165,7 +220,7 @@ router.get(
 
                         await new ExternalImage({
                             url,
-                            fileId: data.fileId,
+                            fileId,
                         }).save();
                     } catch (err) {
                         // Ignore error
