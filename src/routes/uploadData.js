@@ -25,7 +25,7 @@ const upload = multer({
             return;
         }
 
-        throw new ResponseError(400, 'Invalid type');
+        cb(new ResponseError(400, 'Invalid type'), false);
     },
 });
 
