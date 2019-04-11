@@ -15,13 +15,11 @@ services:
     volumes:
       - files_vol:/data/files
     deploy:
-      replicas: 4
+      replicas: 1
 
   mongo:
     image: mongo:4
     restart: always
-    ports:
-      - 27017:27017
     volumes:
       - mongodb_vol:/data/db
 
