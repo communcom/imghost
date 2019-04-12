@@ -140,27 +140,23 @@ router.get(
             }
 
             if (!buffer) {
+                buffer = await downloadImage(url);
+
                 try {
-                    buffer = await downloadImage(url);
+                    const data = await processAndSave(buffer);
+                    fileId = data.fileId;
+                    buffer = data.buffer;
 
-                    try {
-                        const data = await processAndSave(buffer);
-                        fileId = data.fileId;
-                        buffer = data.buffer;
-
-                        await ExternalImage.updateOne(
-                            { url },
-                            {
-                                url,
-                                fileId,
-                            },
-                            { upsert: true }
-                        );
-                    } catch (err) {
-                        // Ignore error
-                    }
+                    await ExternalImage.updateOne(
+                        { url },
+                        {
+                            url,
+                            fileId,
+                        },
+                        { upsert: true }
+                    );
                 } catch (err) {
-                    console.warn('Request failed:', err);
+                    console.error('Image processing failed:', err);
                 }
             }
         }
