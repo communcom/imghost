@@ -33,6 +33,10 @@ router.post(
     '/upload',
     upload.single('file'),
     apiWrapper(async (req, res) => {
+        if (!req.file) {
+            throw new ResponseError(400, 'No file');
+        }
+
         const { buffer } = req.file;
 
         const { fileId } = await processAndSave(buffer);

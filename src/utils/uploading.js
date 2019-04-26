@@ -28,7 +28,7 @@ async function processAndSave(buffer) {
     }
 
     if (!extension) {
-        throw new ResponseError(404, 'Supported only formats: jpg, png, gif');
+        throw new ResponseError(415, 'Supported only formats: jpg, png, gif');
     }
 
     const shaSum = crypto.createHash('sha1');
