@@ -7,6 +7,7 @@ const { ExternalImage } = require('../db');
 const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { downloadImage } = require('../utils/download');
 const { processAndSave } = require('../utils/uploading');
+const { normalizeUrl } = require('../utils/urls');
 const { apiWrapper, sendFile, ResponseError } = require('../utils/express');
 
 const router = express.Router();
@@ -86,7 +87,7 @@ router.get(
         const width = Number(req.params.width);
         const height = Number(req.params.height);
 
-        const url = decodeURIComponent(req.originalUrl.match(/^\/proxy\/\d+x\d+\/(.+)$/)[1]);
+        const url = normalizeUrl(req.originalUrl.match(/^\/proxy\/\d+x\d+\/(.+)$/)[1]);
 
         const urlInfo = urlParser.parse(url);
 
@@ -172,7 +173,7 @@ router.get(
 router.get(
     '/proxy/*',
     apiWrapper(async (req, res) => {
-        const url = decodeURIComponent(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
+        const url = normalizeUrl(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
 
         const urlInfo = urlParser.parse(url);
 
