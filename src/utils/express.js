@@ -28,6 +28,12 @@ function apiWrapper(func) {
         try {
             await Promise.race([func(req, res), timeoutError(REQUEST_TIMEOUT)]);
         } catch (err) {
+            let errorMessage = err.message.substr(0, 200);
+
+            if (errorMessage.includes('{"type":"Buffer"')) {
+                errorMessage = 'Proxying Error';
+            }
+
             if (err instanceof ResponseError) {
                 res.status(err.statusCode);
                 res.json({
@@ -37,7 +43,34 @@ function apiWrapper(func) {
                 return;
             }
 
-            console.error('Request handling error:', err);
+            if (err.name === 'StatusCodeError') {
+                console.warn('Request handling error:', errorMessage);
+
+                let code = 500;
+
+                if (err.statusCode > 400 && err.statusCode < 600) {
+                    code = err.statusCode;
+                }
+
+                res.status(code);
+                res.json({
+                    status: code,
+                    statusText: errorMessage,
+                });
+                return;
+            }
+
+            if (err.name === 'RequestError') {
+                console.warn('Request handling error:', errorMessage);
+                res.status(500);
+                res.json({
+                    status: 500,
+                    statusText: errorMessage,
+                });
+                return;
+            }
+
+            console.warn('Request handling error:', err);
             res.status(500);
             res.json({
                 status: 500,
