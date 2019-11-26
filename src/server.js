@@ -4,7 +4,9 @@ const cors = require('cors');
 const { connect } = require('./db');
 const config = require('./config');
 
-console.log('\n> Applications starting with config:\n============\n', config, '\n============');
+const jsonConf = JSON.stringify(config, null, 2);
+
+console.log(`\n> Applications starting with config:\n============\n${jsonConf}\n============`);
 
 const healthCheck = require('./routes/healthCheck');
 const dataServer = require('./routes/dataServer');
