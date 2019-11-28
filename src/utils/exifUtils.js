@@ -30,16 +30,7 @@ function hasOrientation(d = {}) {
     return false;
 }
 
-function hasLocation(d = {}) {
-    if (d && d.gps) {
-        return Object.keys(d.gps).some(key => /Latitude|Longitude|Altitude/i.test(key));
-    }
-
-    return false;
-}
-
 module.exports = {
     exif,
     hasOrientation,
-    hasLocation,
 };

@@ -3,7 +3,7 @@ const fileType = require('file-type');
 const base58 = require('bs58');
 const sharp = require('sharp');
 
-const { exif, hasLocation, hasOrientation } = require('./exifUtils');
+const { exif, hasOrientation } = require('./exifUtils');
 const { ResponseError } = require('./express');
 const { saveToStorage } = require('./discStorage');
 
@@ -23,12 +23,15 @@ async function processAndSave(buffer) {
             case 'image/png':
                 extension = 'png';
                 break;
+            case 'image/webp':
+                extension = 'webp';
+                break;
             default:
         }
     }
 
     if (!extension) {
-        throw new ResponseError(415, 'Supported only formats: jpg, png, gif');
+        throw new ResponseError(415, 'Supported only formats: jpg, webp, png, gif');
     }
 
     const shaSum = crypto.createHash('sha1');
@@ -44,22 +47,11 @@ async function processAndSave(buffer) {
         try {
             const exifData = await exif(buffer);
             const orientation = hasOrientation(exifData);
-            const location = hasLocation(exifData);
 
-            if (location || orientation) {
+            if (orientation) {
                 const image = sharp(buffer);
-
-                // For privacy, remove: GPS Information, Camera Info, etc..
-                // Sharp will remove EXIF info by default unless withMetadata is called..
-                if (!location) {
-                    image.withMetadata();
-                }
-
-                // Auto-orient based on the EXIF Orientation.  Remove orientation (if any)
-                if (orientation) {
-                    image.rotate();
-                }
-
+                // Auto-orient based on the EXIF Orientation. Remove orientation (if any).
+                image.rotate();
                 // eslint-disable-next-line no-param-reassign
                 buffer = await image.toBuffer();
             }
