@@ -1,4 +1,4 @@
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/webp', 'image/png', 'image/gif'];
 
 function getMimeTypeByFileName(filename) {
     const ext = filename.match(/\.(.+)$/)[1];
@@ -8,6 +8,8 @@ function getMimeTypeByFileName(filename) {
             return 'image/jpeg';
         case 'png':
             return 'image/png';
+        case 'webp':
+            return 'image/webp';
         case 'gif':
             return 'image/gif';
         default:
