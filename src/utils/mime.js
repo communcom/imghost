@@ -1,7 +1,7 @@
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/webp', 'image/png', 'image/gif'];
 
 function getMimeTypeByFileName(filename) {
-    const ext = filename.match(/\.(.+)$/)[1];
+    const ext = filename.match(/\.([^.]+)$/)[1];
 
     switch (ext) {
         case 'jpg':

@@ -1,5 +1,3 @@
-const { getMimeTypeByFileName } = require('./mime');
-
 const REQUEST_TIMEOUT = 5000;
 
 class ResponseError extends Error {
@@ -80,8 +78,8 @@ function apiWrapper(func) {
     };
 }
 
-function sendFile(res, filename, buffer) {
-    res.header('Content-Type', getMimeTypeByFileName(filename));
+function sendFile(res, { mimeType, buffer }) {
+    res.header('Content-Type', mimeType);
     res.send(buffer);
 }
 
