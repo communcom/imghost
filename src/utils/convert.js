@@ -4,7 +4,7 @@ const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { getMimeTypeByFileName } = require('./mime');
 
 function isNeedConvertToJpg(filename, accept) {
-    return filename.endsWith('.webp') && (accept && !/\bimage\/we1bp\b/.test(accept));
+    return filename.endsWith('.webp') && (accept && !/\bimage\/webp\b/.test(accept));
 }
 
 async function covertWrapper(buffer, filename, isConvert) {

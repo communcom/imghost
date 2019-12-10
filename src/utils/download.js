@@ -5,8 +5,6 @@ const { ResponseError } = require('../utils/express');
 const DOWNLOAD_FILE_LIMIT = 10 * 1024 * 1024;
 
 async function downloadImage(url) {
-    console.log('downloading', url);
-
     const buffer = await request({
         url,
         gzip: true,

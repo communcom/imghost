@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 const express = require('express');
 const urlParser = require('url');
 
@@ -134,8 +133,6 @@ router.get(
         if (!buffer) {
             throw new ResponseError(404, 'Not found');
         }
-
-        console.log('1 needConvert', needConvert);
 
         sendFile(res, await process({ fileId, width, height, buffer, needConvert }));
     })
