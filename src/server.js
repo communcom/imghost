@@ -13,6 +13,20 @@ const dataServer = require('./routes/dataServer');
 const uploadData = require('./routes/uploadData');
 const imageProxy = require('./routes/imageProxy');
 
+function checkOrigin(origin) {
+    if (!origin || config.allowedOrigins.includes(origin)) {
+        return true;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+        if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 connect();
 
 const app = express();
@@ -22,15 +36,7 @@ app.disable('x-powered-by');
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (
-                !origin ||
-                /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-                config.allowedOrigins.includes(origin)
-            ) {
-                callback(null, true);
-            } else {
-                callback(null, false);
-            }
+            callback(null, checkOrigin(origin));
         },
     })
 );
