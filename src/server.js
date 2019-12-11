@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const { connect } = require('./db');
 const config = require('./config');
+const { checkOrigin } = require('./utils/origin');
 
 const jsonConf = JSON.stringify(config, null, 2);
 
@@ -12,20 +13,6 @@ const healthCheck = require('./routes/healthCheck');
 const dataServer = require('./routes/dataServer');
 const uploadData = require('./routes/uploadData');
 const imageProxy = require('./routes/imageProxy');
-
-function checkOrigin(origin) {
-    if (!origin || config.allowedOrigins.includes(origin)) {
-        return true;
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-        if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 connect();
 

@@ -9,11 +9,13 @@ const { normalizeUrl } = require('../utils/urls');
 const { isNeedConvertToJpg, convertIfNeed } = require('../utils/convert');
 const { apiWrapper, sendFile, ResponseError } = require('../utils/express');
 const { checkResizedCache, checkSelfHost, process } = require('../utils/proxy');
+const { checkReferer } = require('../utils/origin');
 
 const router = express.Router();
 
 router.get(
     '/images/:width(\\d+)x:height(\\d+)/:fileId',
+    checkReferer,
     apiWrapper(async (req, res) => {
         const { params, headers } = req;
 
@@ -45,6 +47,7 @@ router.get(
 
 router.get(
     '/proxy/:width(\\d+)x:height(\\d+)/*',
+    checkReferer,
     apiWrapper(async (req, res) => {
         const { params, headers } = req;
 
@@ -140,6 +143,7 @@ router.get(
 
 router.get(
     '/proxy/*',
+    checkReferer,
     apiWrapper(async (req, res) => {
         const { headers } = req;
         const url = normalizeUrl(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
