@@ -1,17 +1,11 @@
 const config = require('../config');
 
 function checkOrigin(origin) {
-    if (!origin || config.allowedOrigins.includes(origin)) {
-        return true;
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-        if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-            return true;
-        }
-    }
-
-    return false;
+    return (
+        !origin ||
+        config.allowedOrigins.includes(origin) ||
+        /^https?:\/\/localhost(:\d+)?$/.test(origin)
+    );
 }
 
 function checkReferer(req, res, next) {
