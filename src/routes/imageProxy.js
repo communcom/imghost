@@ -117,7 +117,7 @@ router.get(
 
                 try {
                     ({ fileId, buffer } = await processAndSave(buffer));
-                    fileId = isNeedConvertToJpg(fileId, headers.accept);
+                    needConvert = isNeedConvertToJpg(fileId, headers.accept);
 
                     await ExternalImage.updateOne(
                         { url },
