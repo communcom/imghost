@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 
 const { filesPath } = require('../config');
+const { ResponseError } = require('./express');
 const { formatFullPath } = require('./path');
 
 async function saveTo(dir, filename, buffer) {
@@ -51,7 +52,20 @@ function getFromStorage(fileId) {
 //     });
 // }
 
+async function forceGetFromStorage(fileId) {
+    try {
+        return await getFromStorage(fileId);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            throw new ResponseError(404, 'Not found');
+        }
+
+        throw err;
+    }
+}
+
 module.exports = {
     saveToStorage,
     getFromStorage,
+    forceGetFromStorage,
 };

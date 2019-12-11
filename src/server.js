@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const { connect } = require('./db');
 const config = require('./config');
+const { checkOrigin } = require('./utils/origin');
 
 const jsonConf = JSON.stringify(config, null, 2);
 
@@ -22,15 +23,7 @@ app.disable('x-powered-by');
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (
-                !origin ||
-                /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-                config.allowedOrigins.includes(origin)
-            ) {
-                callback(null, true);
-            } else {
-                callback(null, false);
-            }
+            callback(null, checkOrigin(origin));
         },
     })
 );
