@@ -50,13 +50,13 @@ async function covertWrapper(buffer, filename, isConvert) {
     };
 }
 
-async function convertIfNeed(buffer, filename, accept) {
+async function convertIfNeeded(buffer, filename, accept) {
     // If we want to get webp but our browser doesn't support this format
     return covertWrapper(buffer, filename, isNeedConvertToJpg(filename, accept));
 }
 
 module.exports = {
     isNeedConvertToJpg,
-    convertIfNeed,
+    convertIfNeeded,
     covertWrapper,
 };

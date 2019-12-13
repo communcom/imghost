@@ -9,10 +9,11 @@ const jsonConf = JSON.stringify(config, null, 2);
 
 console.log(`\n> Applications starting with config:\n============\n${jsonConf}\n============`);
 
+const { checkReferer } = require('./utils/origin');
+
 const healthCheck = require('./routes/healthCheck');
-const dataServer = require('./routes/dataServer');
+const imageServer = require('./routes/imageServer');
 const uploadData = require('./routes/uploadData');
-const imageProxy = require('./routes/imageProxy');
 
 connect();
 
@@ -29,9 +30,8 @@ app.use(
 );
 
 app.use(healthCheck);
-app.use(dataServer);
 app.use(uploadData);
-app.use(imageProxy);
+app.use(checkReferer, imageServer);
 
 const port = process.env.IN_DOCKER ? 80 : config.port;
 

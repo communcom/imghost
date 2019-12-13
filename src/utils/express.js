@@ -1,3 +1,5 @@
+const { sendImageInfo } = require('../utils/imageInfo');
+
 const REQUEST_TIMEOUT = 5000;
 
 class ResponseError extends Error {
@@ -21,10 +23,21 @@ function timeoutError(ms) {
     });
 }
 
+function sendFile(res, { mimeType, buffer }) {
+    res.header('Content-Type', mimeType);
+    res.send(buffer);
+}
+
 function apiWrapper(func) {
     return async (req, res) => {
         try {
-            await Promise.race([func(req, res), timeoutError(REQUEST_TIMEOUT)]);
+            const img = await Promise.race([func(req, res), timeoutError(REQUEST_TIMEOUT)]);
+
+            if (req.params.action === 'info') {
+                await sendImageInfo(res, img.buffer);
+            } else {
+                sendFile(res, img);
+            }
         } catch (err) {
             let errorMessage = err.message.substr(0, 200);
 
@@ -42,7 +55,7 @@ function apiWrapper(func) {
             }
 
             if (err.name === 'StatusCodeError') {
-                console.warn('Request handling error:', errorMessage);
+                console.warn('Request handling error:', err);
 
                 let code = 500;
 
@@ -59,7 +72,7 @@ function apiWrapper(func) {
             }
 
             if (err.name === 'RequestError') {
-                console.warn('Request handling error:', errorMessage);
+                console.warn('Request handling error:', err);
                 res.status(500);
                 res.json({
                     status: 500,
@@ -78,13 +91,7 @@ function apiWrapper(func) {
     };
 }
 
-function sendFile(res, { mimeType, buffer }) {
-    res.header('Content-Type', mimeType);
-    res.send(buffer);
-}
-
 module.exports = {
     apiWrapper,
-    sendFile,
     ResponseError,
 };

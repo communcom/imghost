@@ -6,19 +6,24 @@ const { getFromStorage, forceGetFromStorage } = require('../utils/discStorage');
 const { downloadImage } = require('../utils/download');
 const { processAndSave } = require('../utils/uploading');
 const { normalizeUrl } = require('../utils/urls');
-const { isNeedConvertToJpg, convertIfNeed } = require('../utils/convert');
-const { apiWrapper, sendFile, ResponseError } = require('../utils/express');
+const { isNeedConvertToJpg, convertIfNeeded } = require('../utils/convert');
+const { apiWrapper, ResponseError } = require('../utils/express');
 const { checkResizedCache, checkSelfHost, process } = require('../utils/proxy');
-const { checkReferer } = require('../utils/origin');
 
 const router = express.Router();
 
 router.get(
-    '/images/:width(\\d+)x:height(\\d+)/:fileId',
-    checkReferer,
-    apiWrapper(async (req, res) => {
-        const { params, headers } = req;
+    '/:action(info)?/images/:filename',
+    apiWrapper(async ({ params, headers }) => {
+        const { filename } = params;
 
+        return convertIfNeeded(await forceGetFromStorage(filename), filename, headers.accept);
+    })
+);
+
+router.get(
+    '/:action(info)?/images/:width(\\d+)x:height(\\d+)/:fileId',
+    apiWrapper(async ({ params, headers }) => {
         const width = Number(params.width);
         const height = Number(params.height);
         const { fileId } = params;
@@ -28,33 +33,28 @@ router.get(
         const cached = await checkResizedCache({ fileId, width, height, needConvert });
 
         if (cached) {
-            sendFile(res, cached);
-            return;
+            return cached;
         }
 
-        sendFile(
-            res,
-            await process({
-                fileId,
-                width,
-                height,
-                buffer: await forceGetFromStorage(fileId),
-                needConvert,
-            })
-        );
+        return process({
+            fileId,
+            width,
+            height,
+            buffer: await forceGetFromStorage(fileId),
+            needConvert,
+        });
     })
 );
 
 router.get(
-    '/proxy/:width(\\d+)x:height(\\d+)/*',
-    checkReferer,
-    apiWrapper(async (req, res) => {
+    '/:action(info)?/proxy/:width(\\d+)x:height(\\d+)/*',
+    apiWrapper(async req => {
         const { params, headers } = req;
 
         const width = Number(params.width);
         const height = Number(params.height);
 
-        const url = normalizeUrl(req.originalUrl.match(/^\/proxy\/\d+x\d+\/(.+)$/)[1]);
+        const url = normalizeUrl(req.originalUrl.match(/^(?:\/info)?\/proxy\/\d+x\d+\/(.+)$/)[1]);
 
         const urlInfo = urlParser.parse(url);
 
@@ -66,7 +66,7 @@ router.get(
         let fileId;
         let needConvert;
 
-        fileId = checkSelfHost(res, urlInfo);
+        fileId = checkSelfHost(urlInfo);
 
         if (fileId) {
             needConvert = isNeedConvertToJpg(fileId, headers.accept);
@@ -79,8 +79,7 @@ router.get(
             });
 
             if (cached) {
-                sendFile(res, cached);
-                return;
+                return cached;
             }
 
             buffer = await forceGetFromStorage(fileId);
@@ -101,8 +100,7 @@ router.get(
                 const cached = await checkResizedCache({ fileId, width, height, needConvert });
 
                 if (cached) {
-                    sendFile(res, cached);
-                    return;
+                    return cached;
                 }
 
                 try {
@@ -137,16 +135,15 @@ router.get(
             throw new ResponseError(404, 'Not found');
         }
 
-        sendFile(res, await process({ fileId, width, height, buffer, needConvert }));
+        return process({ fileId, width, height, buffer, needConvert });
     })
 );
 
 router.get(
-    '/proxy/*',
-    checkReferer,
-    apiWrapper(async (req, res) => {
+    '/:action(info)?/proxy/*',
+    apiWrapper(async req => {
         const { headers } = req;
-        const url = normalizeUrl(req.originalUrl.match(/^\/proxy\/(.+)$/)[1]);
+        const url = normalizeUrl(req.originalUrl.match(/^(?:\/info)?\/proxy\/(.+)$/)[1]);
 
         const urlInfo = urlParser.parse(url);
 
@@ -154,18 +151,14 @@ router.get(
             throw new ResponseError(400, 'Invalid URL');
         }
 
-        const selfFileId = checkSelfHost(res, urlInfo);
+        const selfFileId = checkSelfHost(urlInfo);
 
         if (selfFileId) {
-            sendFile(
-                res,
-                await convertIfNeed(
-                    await forceGetFromStorage(selfFileId),
-                    selfFileId,
-                    headers.accept
-                )
+            return convertIfNeeded(
+                await forceGetFromStorage(selfFileId),
+                selfFileId,
+                headers.accept
             );
-            return;
         }
 
         const externalImage = await ExternalImage.findOne(
@@ -188,8 +181,7 @@ router.get(
             }
 
             if (buffer) {
-                sendFile(res, await convertIfNeed(buffer, fileId, headers.accept));
-                return;
+                return convertIfNeeded(buffer, fileId, headers.accept);
             }
         }
 
@@ -210,7 +202,7 @@ router.get(
             console.error(err);
         }
 
-        sendFile(res, await convertIfNeed(buffer, fileId, headers.accept));
+        return convertIfNeeded(buffer, fileId, headers.accept);
     })
 );
 

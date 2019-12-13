@@ -30,7 +30,7 @@ async function checkResizedCache({ fileId, width, height, needConvert }) {
     return null;
 }
 
-function checkSelfHost(res, urlInfo) {
+function checkSelfHost(urlInfo) {
     if (!(urlInfo.protocol === 'https:' && urlInfo.host === domainName)) {
         return null;
     }
@@ -55,7 +55,7 @@ async function process({ fileId, width, height, buffer, needConvert }) {
     if (needConvert) {
         mimeType = 'image/jpeg';
         sharpProcess = sharpProcess.jpeg({
-            quality: 80,
+            quality: 75,
         });
     } else {
         mimeType = getMimeTypeByFileName(fileId);
