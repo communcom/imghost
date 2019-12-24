@@ -55,12 +55,14 @@ function apiWrapper(func) {
             }
 
             if (err.name === 'StatusCodeError') {
-                console.warn('Request handling error:', err);
-
                 let code = 500;
 
-                if (err.statusCode > 400 && err.statusCode < 600) {
+                if (err.statusCode >= 400 && err.statusCode < 600) {
                     code = err.statusCode;
+                }
+
+                if (code !== 404) {
+                    console.warn('Error status code:', err);
                 }
 
                 res.status(code);
