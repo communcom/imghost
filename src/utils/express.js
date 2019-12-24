@@ -28,15 +28,26 @@ function sendFile(res, { mimeType, buffer }) {
     res.send(buffer);
 }
 
+class JSONResponse {
+    constructor(data) {
+        this.data = data;
+    }
+}
+
 function apiWrapper(func) {
     return async (req, res) => {
         try {
-            const img = await Promise.race([func(req, res), timeoutError(REQUEST_TIMEOUT)]);
+            const response = await Promise.race([func(req), timeoutError(REQUEST_TIMEOUT)]);
+
+            if (response instanceof JSONResponse) {
+                res.json(response.data);
+                return;
+            }
 
             if (req.params.action === 'info') {
-                await sendImageInfo(res, img.buffer);
+                await sendImageInfo(res, response.buffer);
             } else {
-                sendFile(res, img);
+                sendFile(res, response);
             }
         } catch (err) {
             let errorMessage = err.message.substr(0, 200);
@@ -96,4 +107,5 @@ function apiWrapper(func) {
 module.exports = {
     apiWrapper,
     ResponseError,
+    JSONResponse,
 };

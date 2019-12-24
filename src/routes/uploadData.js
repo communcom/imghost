@@ -4,7 +4,7 @@ const multer = require('multer');
 const config = require('../config');
 const { ALLOWED_MIME_TYPES } = require('../utils/mime');
 const { processAndSave } = require('../utils/uploading');
-const { apiWrapper, ResponseError } = require('../utils/express');
+const { apiWrapper, ResponseError, JSONResponse } = require('../utils/express');
 
 const router = express.Router();
 
@@ -32,7 +32,7 @@ const upload = multer({
 router.post(
     '/upload',
     upload.single('file'),
-    apiWrapper(async (req, res) => {
+    apiWrapper(async req => {
         if (!req.file) {
             throw new ResponseError(400, 'No file');
         }
@@ -51,7 +51,7 @@ router.post(
             url = `${protocol}://${domainName}:${port}/${filePath}`;
         }
 
-        res.json({
+        return new JSONResponse({
             url,
         });
     })
