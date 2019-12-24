@@ -5,7 +5,7 @@ const { getFromStorage, saveToStorage } = require('../utils/discStorage');
 const { getMimeTypeByFileName } = require('../utils/mime');
 
 function makeResizedFileId(fileId, { width, height, needConvert }) {
-    let newFileId = fileId.replace('.', `_${width}x${height}.`);
+    let newFileId = fileId.replace('.', `_${width || 0}x${height || 0}.`);
 
     if (needConvert) {
         newFileId += '.jpg';
@@ -45,7 +45,7 @@ function checkSelfHost(urlInfo) {
 }
 
 async function process({ fileId, width, height, buffer, needConvert }) {
-    let sharpProcess = sharp(buffer).resize(width, height, {
+    let sharpProcess = sharp(buffer).resize(width || null, height || null, {
         fit: 'cover',
         withoutEnlargement: true,
     });
