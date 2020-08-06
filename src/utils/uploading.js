@@ -34,6 +34,16 @@ async function processAndSave(buffer) {
         throw new ResponseError(415, 'Supported only formats: jpg, webp, png, gif');
     }
 
+    if (extension === 'png') {
+        extension = 'jpg';
+        // eslint-disable-next-line no-param-reassign
+        buffer = await sharp(buffer)
+            .jpeg({
+                quality: 80,
+            })
+            .toBuffer();
+    }
+
     const shaSum = crypto.createHash('sha1');
 
     shaSum.update(buffer);
